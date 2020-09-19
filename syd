@@ -5,55 +5,75 @@ import youtube_dl
 import os
 import threading
 
-app_name = 'syd-music'
-sg.theme('LightGreen')
-layout = [  [sg.Text('YouTube link')],
-            [sg.InputText(key='url')], 
-            [sg.Button('Download MP3', key='dl', bind_return_key=True), sg.Button('View downloaded songs', key='view')], 
-            [sg.Text(key='status', size=(24,1))] ]
-window = sg.Window('syd-music', layout)
+DL_THREAD_EVENT = 'dl_thread_event'
+DL_BEGIN = 'dl_begin'
+DL_END = 'dl_end'
 
-download_path = '{}/Music/{}/'.format(os.environ['HOME'], app_name)
-ydl_opts = {
-    'outtmpl': '{}%(title)s.%(ext)s'.format(download_path),
-    'format': 'bestaudio/best',
-    'ignoreerrors': 'true',
-    'postprocessors': [{
-        'key': 'FFmpegExtractAudio',
-        'preferredcodec': 'mp3',
-        'preferredquality': '128',
-    }],
-}
-ytdl = youtube_dl.YoutubeDL(ydl_opts)
-
-def download(url, callback):
-    ytdl.download([url])
-    callback()
-
-def on_dl_start():
+def on_dl_begin(window):
     window['dl'].update(disabled=True)
     window['status'].update('Downloading...')
 
-def on_dl_complete():
+def on_dl_end(window):
     window['status'].update('Done!')
     window['dl'].update(disabled=False)
 
-def on_url_invalid():
+def on_url_invalid(window):
     window['status'].update('That\'s not a YouTube link.')
 
-while True: 
-    event, values = window.read()
-    if event == sg.WINDOW_CLOSED:
-        break
-    elif event == 'dl':
-        url = values['url']
-        if not url.startswith('https://www.youtube.com/'):
-            on_url_invalid()
-        else:
-            on_dl_start()
-            dl_thread = threading.Thread(target=download, args=(url, on_dl_complete))
-            dl_thread.start()
-    elif event == 'view':
-        subprocess.Popen(['xdg-open', download_path])
+def dl_worker(url, window, ytdl):
+    window.write_event_value(DL_THREAD_EVENT, DL_BEGIN)
+    ytdl.download([url])
+    window.write_event_value(DL_THREAD_EVENT, DL_END)
+    
+def main(): 
+    #init GUI
+    app_name = 'syd-music'
+    sg.theme('LightGreen')
+    layout = [  
+        [sg.Text('YouTube link')],
+        [sg.InputText(key='url')], 
+        [sg.Button('Download MP3', key='dl', bind_return_key=True), sg.Button('View downloaded songs', key='view')], 
+        [sg.Text(key='status', size=(24,1))]
+    ]
+    window = sg.Window('syd-music', layout)
+    #init YoutubeDL
+    download_path = '{}/Music/{}/'.format(os.environ['HOME'], app_name)
+    opts = {
+        'outtmpl': '{}%(title)s.%(ext)s'.format(download_path),
+        'format': 'bestaudio/best',
+        'ignoreerrors': 'true',
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '128',
+        }],
+    }
+    ytdl = youtube_dl.YoutubeDL(opts)
+    #event loop
+    while True: 
+        event, values = window.read()
+        if event == 'dl':
+            url = values['url']
+            if not url.startswith('https://www.youtube.com/'): 
+                on_url_invalid(window)
+            else:
+                threading.Thread(
+                    target=dl_worker, 
+                    args=(url, window, ytdl), 
+                    daemon=True
+                ).start()
+        if event == DL_THREAD_EVENT:
+            thread_status = values[DL_THREAD_EVENT]
+            if thread_status == DL_BEGIN: 
+                on_dl_begin(window)
+            if thread_status == DL_END: 
+                on_dl_end(window)
+        if event == 'view':
+            subprocess.Popen(['xdg-open', download_path])
+        if event == sg.WINDOW_CLOSED:
+            break
 
-window.close()
+    window.close()
+
+if __name__ == '__main__':
+    main()
