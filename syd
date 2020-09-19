@@ -9,6 +9,9 @@ DL_THREAD_EVENT = 'dl_thread_event'
 DL_BEGIN = 'dl_begin'
 DL_END = 'dl_end'
 
+DL_PROGRESS_EVENT = 'dl_progress_event'
+DL_PROGRESS = 'dl_progress'
+
 def on_dl_begin(window):
     window['dl'].update(disabled=True)
     window['status'].update('Downloading...')
@@ -24,6 +27,11 @@ def dl_worker(url, window, ytdl):
     window.write_event_value(DL_THREAD_EVENT, DL_BEGIN)
     ytdl.download([url])
     window.write_event_value(DL_THREAD_EVENT, DL_END)
+
+def dl_progress_hook(prog):
+    if prog['status'] == 'downloading':
+        perc = (prog['downloaded_bytes']/prog['total_bytes']) * 100
+        print(perc)
     
 def main(): 
     #init GUI
@@ -42,6 +50,8 @@ def main():
         'outtmpl': '{}%(title)s.%(ext)s'.format(download_path),
         'format': 'bestaudio/best',
         'ignoreerrors': 'true',
+        'quiet': 'true',
+        'progress_hooks': [dl_progress_hook],
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
