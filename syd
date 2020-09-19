@@ -7,9 +7,9 @@ import threading
 
 app_name = 'syd-music'
 sg.theme('LightGreen')
-layout = [  [sg.Text('YouTube URL')],
+layout = [  [sg.Text('YouTube link')],
             [sg.InputText(key='url')], 
-            [sg.Button('Download MP3', key='dl'), sg.Button('View downloaded songs', key='view')], 
+            [sg.Button('Download MP3', key='dl', bind_return_key=True), sg.Button('View downloaded songs', key='view')], 
             [sg.Text(key='status', size=(24,1))] ]
 window = sg.Window('syd-music', layout)
 
@@ -17,6 +17,7 @@ download_path = '{}/Music/{}/'.format(os.environ['HOME'], app_name)
 ydl_opts = {
     'outtmpl': '{}%(title)s.%(ext)s'.format(download_path),
     'format': 'bestaudio/best',
+    'ignoreerrors': 'true',
     'postprocessors': [{
         'key': 'FFmpegExtractAudio',
         'preferredcodec': 'mp3',
@@ -37,18 +38,22 @@ def on_dl_complete():
     window['status'].update('Done!')
     window['dl'].update(disabled=False)
 
+def on_url_invalid():
+    window['status'].update('That\'s not a YouTube link.')
+
 while True: 
     event, values = window.read()
     if event == sg.WINDOW_CLOSED:
         break
-    if event == 'dl':
-        on_dl_start()
-        threading.Thread(
-            target=download, 
-            args=(values['url'], on_dl_complete)
-        ).start()
-        continue
-    if event == 'view':
+    elif event == 'dl':
+        url = values['url']
+        if not url.startswith('https://www.youtube.com/'):
+            on_url_invalid()
+        else:
+            on_dl_start()
+            dl_thread = threading.Thread(target=download, args=(url, on_dl_complete))
+            dl_thread.start()
+    elif event == 'view':
         subprocess.Popen(['xdg-open', download_path])
 
 window.close()
