@@ -4,8 +4,6 @@ import subprocess
 import youtube_dl
 import os
 import threading
-import math
-import validators
 
 class Syd:
     _APP_NAME = 'syd-music'
@@ -14,6 +12,7 @@ class Syd:
     _EVENT_PROGRESS = 'dl_progress'
     _EVENT_CONVERT_BEGIN = 'convert_begin'
     _EVENT_CONVERT_END = 'convert_end'
+    _EVENT_ERROR = 'error'
 
     def __init__(self):
         #GUI
@@ -22,7 +21,7 @@ class Syd:
             [sg.Text('YouTube link')],
             [sg.InputText(key='url')], 
             [sg.Button('Download MP3', key='dl', bind_return_key=True), sg.Button('View downloaded songs', key='view')], 
-            [sg.Text(key='status', size=(24,1))]
+            [sg.Text(key='status', size=(32,1))]
         ]
         self._window = sg.Window('syd-music', layout)
         #YoutubeDL
@@ -30,7 +29,7 @@ class Syd:
         opts = {
             'outtmpl': '{}%(title)s.%(ext)s'.format(self._DOWNLOAD_PATH),
             'format': 'bestaudio/best',
-            'ignoreerrors': 'true',
+            'quiet': True,
             'progress_hooks': [self._dl_progress_hook],
             'postprocessors': [{
                 'key': 'FFmpegExtractAudio',
@@ -47,7 +46,7 @@ class Syd:
                 self._download(values['url'])
             if event == self._EVENT_BEGIN:
                 self._dl_enabled(False)
-                self._status('Gathering info…')
+                self._status('Extracting info…')
             if event == self._EVENT_PROGRESS:
                 perc = values[event]
                 self._status('Downloading: {}'.format(perc))
@@ -55,6 +54,9 @@ class Syd:
                 self._status('Converting to MP3…')
             if event == self._EVENT_CONVERT_END:
                 self._status('Done!')
+                self._dl_enabled()
+            if event == self._EVENT_ERROR:
+                self._status('Couldn\'t download, check your link.')
                 self._dl_enabled()
             if event == 'view':
                 subprocess.Popen(['xdg-open', self._DOWNLOAD_PATH])
@@ -64,16 +66,11 @@ class Syd:
         self._window.close()
 
     def _download(self, url):
-        if not validators.url(url): 
-            self._status('That\'s not a link.')
-        elif not '//www.youtube.com/watch?v=' in url:
-            self._status('That\'s not a YouTube link.')
-        else:
-            threading.Thread(
-                target=self._dl_worker, 
-                args=(url,), 
-                daemon=True
-            ).start()
+        threading.Thread(
+            target=self._dl_worker, 
+            args=(url,), 
+            daemon=True
+        ).start()
 
     def _event(self, key, value=any):
         self._window.write_event_value(key, value)
@@ -86,8 +83,12 @@ class Syd:
 
     def _dl_worker(self, url):
         self._event(self._EVENT_BEGIN)
-        self._ytdl.download([url])
-        self._event(self._EVENT_CONVERT_END)
+        try:
+            self._ytdl.download([url])
+        except:
+            self._event(self._EVENT_ERROR)
+        else:
+            self._event(self._EVENT_CONVERT_END)
 
     def _dl_progress_hook(self, prog):
         status = prog['status']
