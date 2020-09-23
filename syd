@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 import PySimpleGUI as sg
-import subprocess
 import youtube_dl
 import os
 import threading
+import subprocess
+import platform
 
 class Syd:
     APP_NAME = 'syd-music'
@@ -32,7 +33,7 @@ class Syd:
             if event == self.LABEL_STATUS:
                 self._window[self.LABEL_STATUS].update(values[event])
             if event == self.BTN_VIEW:
-                subprocess.Popen(['xdg-open', self._dl_path])
+                self._open_file(self._dl_path)
             if event == sg.WINDOW_CLOSED:
                 break
 
@@ -133,6 +134,17 @@ class Syd:
     def _on_convert_end(self):
         self._event(self.LABEL_STATUS, 'Done!')
         self._event(self.BTN_DL_ENABLED, True)
+
+    def _open_file(self, file_path):
+        system = platform.system()
+        if system == 'Windows':
+            os.startfile(file_path)
+        elif system == 'Linux':
+            subprocess.Popen(['xdg-open', file_path])
+        elif system == 'Darwin':
+            subprocess.Popen(['open', file_path])
+        else:
+            self._event(self.LABEL_STATUS, 'Can\'t open destination.')
 
 if __name__ == '__main__':
     Syd().start()
