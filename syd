@@ -13,31 +13,24 @@ class Syd:
     ON_CONVERT_BEGIN = 'event-convert-begin'
     ON_CONVERT_END = 'event-convert-end'
     ON_ERROR = 'event-error'
+    BTN_DL_ENABLED = 'event-dl-enabled'
     #view keys
     BTN_DL = 'event-download'
     BTN_VIEW = 'event-view'
     INPUT_URL = 'url'
     LABEL_STATUS = 'status'
+    #other constants
+    TRUNC_SIZE = 24
 
     def start(self):
         while True: 
             event, values = self._window.read()
             if event == self.BTN_DL:
                 self._download(values[self.INPUT_URL])
-            if event == self.ON_BEGIN:
-                self._dl_enabled(False)
-                self._status('Extracting info…')
-            if event == self.ON_PROGRESS:
-                perc = values[event]
-                self._status('Downloading: {}'.format(perc))
-            if event == self.ON_CONVERT_BEGIN: 
-                self._status('Converting to MP3…')
-            if event == self.ON_CONVERT_END:
-                self._status('Done!')
-                self._dl_enabled()
-            if event == self.ON_ERROR:
-                self._status('Couldn\'t download, check your link.')
-                self._dl_enabled()
+            if event == self.BTN_DL_ENABLED:
+                self._window[self.BTN_DL].update(disabled=not values[event])
+            if event == self.LABEL_STATUS:
+                self._window[self.LABEL_STATUS].update(values[event])
             if event == self.BTN_VIEW:
                 subprocess.Popen(['xdg-open', self._dl_path])
             if event == sg.WINDOW_CLOSED:
@@ -55,7 +48,7 @@ class Syd:
             [sg.Text('YouTube link')],
             [sg.InputText(key=self.INPUT_URL)], 
             [sg.Button('Download MP3', key=self.BTN_DL, bind_return_key=True), sg.Button('View downloaded songs', key=self.BTN_VIEW)], 
-            [sg.Text(key=self.LABEL_STATUS, size=(32,1))]
+            [sg.Text(key=self.LABEL_STATUS, size=(36,1))]
         ]
         self._window = sg.Window(self.APP_NAME, layout)
 
@@ -66,7 +59,7 @@ class Syd:
         params = {
             #outtmpl is set based on if playlist or not
             'format': 'bestaudio/best',
-            'quiet': False,
+            'quiet': True,
             'progress_hooks': [self._dl_progress_hook],
             'postprocessors': [{
                 'key': 'FFmpegExtractAudio',
@@ -85,12 +78,6 @@ class Syd:
 
     def _event(self, key, value=any):
         self._window.write_event_value(key, value)
-
-    def _status(self, msg):
-        self._window[self.LABEL_STATUS].update(msg)
-
-    def _dl_enabled(self, enabled=True):
-        self._window[self.BTN_DL].update(disabled=not enabled)
     
     def _update_outtmpl(self, isPlaylist):
         self._ytdl.params.update(
@@ -98,22 +85,54 @@ class Syd:
         )
 
     def _dl_worker(self, url):
-        self._event(self.ON_BEGIN)
+        self._on_begin()
         try:
             info = self._ytdl.extract_info(url, download=False)
             self._update_outtmpl('entries' in info)
             self._ytdl.download([url])
         except:
-            self._event(self.ON_ERROR)
+            self._on_error()
         else:
-            self._event(self.ON_CONVERT_END)
+            self._on_convert_end()
 
     def _dl_progress_hook(self, prog):
         status = prog['status']
         if status == 'downloading':
-            self._event(self.ON_PROGRESS, prog['_percent_str'])
+            self._on_progress_update(prog)
         if status == 'finished':
-            self._event(self.ON_CONVERT_BEGIN)
+            self._on_progress_finished(prog)
+
+    def _on_begin(self):
+        self._event(self.BTN_DL_ENABLED, False)
+        self._event(self.LABEL_STATUS, 'Extracting info…')
+
+    def _on_progress_update(self, prog):
+        video_name = self._truncate_filename(prog['filename'], self.TRUNC_SIZE)
+        status_str = '"{}" {}'.format(video_name, prog['_percent_str'])
+        self._event(self.LABEL_STATUS, status_str)
+
+    def _on_progress_finished(self, prog):
+        video_name = self._truncate_filename(prog['filename'], self.TRUNC_SIZE)
+        status_str = '"{}" to MP3…'.format(video_name)
+        self._event(self.LABEL_STATUS, status_str)
+
+    def _truncate_filename(self, filename, trunc_size):
+        #get filename without path
+        video_name = os.path.basename(filename)
+        #remove extension
+        video_name = os.path.splitext(video_name)[0]
+        #truncate video name
+        if len(video_name) > trunc_size: 
+            video_name = video_name[:trunc_size] + '…'
+        return video_name
+
+    def _on_error(self):
+        self._event(self.LABEL_STATUS, 'Error, check your link.')
+        self._event(self.BTN_DL_ENABLED, True)
+
+    def _on_convert_end(self):
+        self._event(self.LABEL_STATUS, 'Done!')
+        self._event(self.BTN_DL_ENABLED, True)
 
 if __name__ == '__main__':
     Syd().start()
