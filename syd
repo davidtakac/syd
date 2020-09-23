@@ -6,30 +6,67 @@ import os
 import threading
 
 class Syd:
-    _APP_NAME = 'syd-music'
-    #events
-    _EVENT_BEGIN = 'begin'
-    _EVENT_PROGRESS = 'dl_progress'
-    _EVENT_CONVERT_BEGIN = 'convert_begin'
-    _EVENT_CONVERT_END = 'convert_end'
-    _EVENT_ERROR = 'error'
+    APP_NAME = 'syd-music'
+    #manual events
+    ON_BEGIN = 'event-begin'
+    ON_PROGRESS = 'event-dl-progress'
+    ON_CONVERT_BEGIN = 'event-convert-begin'
+    ON_CONVERT_END = 'event-convert-end'
+    ON_ERROR = 'event-error'
+    #view keys
+    BTN_DL = 'event-download'
+    BTN_VIEW = 'event-view'
+    INPUT_URL = 'url'
+    LABEL_STATUS = 'status'
+
+    def start(self):
+        while True: 
+            event, values = self._window.read()
+            if event == self.BTN_DL:
+                self._download(values[self.INPUT_URL])
+            if event == self.ON_BEGIN:
+                self._dl_enabled(False)
+                self._status('Extracting info…')
+            if event == self.ON_PROGRESS:
+                perc = values[event]
+                self._status('Downloading: {}'.format(perc))
+            if event == self.ON_CONVERT_BEGIN: 
+                self._status('Converting to MP3…')
+            if event == self.ON_CONVERT_END:
+                self._status('Done!')
+                self._dl_enabled()
+            if event == self.ON_ERROR:
+                self._status('Couldn\'t download, check your link.')
+                self._dl_enabled()
+            if event == self.BTN_VIEW:
+                subprocess.Popen(['xdg-open', self._dl_path])
+            if event == sg.WINDOW_CLOSED:
+                break
+
+        self._window.close()
 
     def __init__(self):
-        #GUI
+        self._init_gui()
+        self._init_ytdl()
+        
+    def _init_gui(self):
         sg.theme('LightGreen')
         layout = [  
             [sg.Text('YouTube link')],
-            [sg.InputText(key='url')], 
-            [sg.Button('Download MP3', key='dl', bind_return_key=True), sg.Button('View downloaded songs', key='view')], 
-            [sg.Text(key='status', size=(32,1))]
+            [sg.InputText(key=self.INPUT_URL)], 
+            [sg.Button('Download MP3', key=self.BTN_DL, bind_return_key=True), sg.Button('View downloaded songs', key=self.BTN_VIEW)], 
+            [sg.Text(key=self.LABEL_STATUS, size=(32,1))]
         ]
-        self._window = sg.Window('syd-music', layout)
-        #YoutubeDL
-        self._DOWNLOAD_PATH = '{}/Music/{}/'.format(os.environ['HOME'], self._APP_NAME)
-        opts = {
-            'outtmpl': '{}%(title)s.%(ext)s'.format(self._DOWNLOAD_PATH),
+        self._window = sg.Window(self.APP_NAME, layout)
+
+    def _init_ytdl(self):
+        self._dl_path = '{}/Music/{}/'.format(os.environ['HOME'], self.APP_NAME)
+        self._outtmpl_singles = '{}%(title)s.%(ext)s'.format(self._dl_path)
+        self._outtmpl_playlist = '{}%(playlist)s/%(title)s.%(ext)s'.format(self._dl_path)
+        params = {
+            #outtmpl is set based on if playlist or not
             'format': 'bestaudio/best',
-            'quiet': True,
+            'quiet': False,
             'progress_hooks': [self._dl_progress_hook],
             'postprocessors': [{
                 'key': 'FFmpegExtractAudio',
@@ -37,33 +74,7 @@ class Syd:
                 'preferredquality': '128',
             }],
         }
-        self._ytdl = youtube_dl.YoutubeDL(opts)
-
-    def start(self):
-        while True: 
-            event, values = self._window.read()
-            if event == 'dl':
-                self._download(values['url'])
-            if event == self._EVENT_BEGIN:
-                self._dl_enabled(False)
-                self._status('Extracting info…')
-            if event == self._EVENT_PROGRESS:
-                perc = values[event]
-                self._status('Downloading: {}'.format(perc))
-            if event == self._EVENT_CONVERT_BEGIN: 
-                self._status('Converting to MP3…')
-            if event == self._EVENT_CONVERT_END:
-                self._status('Done!')
-                self._dl_enabled()
-            if event == self._EVENT_ERROR:
-                self._status('Couldn\'t download, check your link.')
-                self._dl_enabled()
-            if event == 'view':
-                subprocess.Popen(['xdg-open', self._DOWNLOAD_PATH])
-            if event == sg.WINDOW_CLOSED:
-                break
-
-        self._window.close()
+        self._ytdl = youtube_dl.YoutubeDL(params)
 
     def _download(self, url):
         threading.Thread(
@@ -76,26 +87,33 @@ class Syd:
         self._window.write_event_value(key, value)
 
     def _status(self, msg):
-        self._window['status'].update(msg)
+        self._window[self.LABEL_STATUS].update(msg)
 
     def _dl_enabled(self, enabled=True):
-        self._window['dl'].update(disabled=not enabled)
+        self._window[self.BTN_DL].update(disabled=not enabled)
+    
+    def _update_outtmpl(self, isPlaylist):
+        self._ytdl.params.update(
+            {'outtmpl': self._outtmpl_playlist if isPlaylist else self._outtmpl_singles}
+        )
 
     def _dl_worker(self, url):
-        self._event(self._EVENT_BEGIN)
+        self._event(self.ON_BEGIN)
         try:
+            info = self._ytdl.extract_info(url, download=False)
+            self._update_outtmpl('entries' in info)
             self._ytdl.download([url])
         except:
-            self._event(self._EVENT_ERROR)
+            self._event(self.ON_ERROR)
         else:
-            self._event(self._EVENT_CONVERT_END)
+            self._event(self.ON_CONVERT_END)
 
     def _dl_progress_hook(self, prog):
         status = prog['status']
         if status == 'downloading':
-            self._event(self._EVENT_PROGRESS, prog['_percent_str'])
+            self._event(self.ON_PROGRESS, prog['_percent_str'])
         if status == 'finished':
-            self._event(self._EVENT_CONVERT_BEGIN)
+            self._event(self.ON_CONVERT_BEGIN)
 
 if __name__ == '__main__':
     Syd().start()
