@@ -4,7 +4,6 @@ import youtube_dl
 import os
 import threading
 import subprocess
-import platform
 
 class Syd:
     APP_NAME = 'syd-music'
@@ -156,15 +155,7 @@ class Syd:
         pass
 
     def _open_file(self, file_path):
-        system = platform.system()
-        if system == 'Windows':
-            os.startfile(file_path)
-        elif system == 'Linux':
-            subprocess.Popen(['xdg-open', file_path])
-        elif system == 'Darwin':
-            subprocess.Popen(['open', file_path])
-        else:
-            self._event(self.LABEL_STATUS, 'Can\'t open destination.')
+        subprocess.Popen(['xdg-open', file_path])
 
 if __name__ == '__main__':
     Syd().start()
