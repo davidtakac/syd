@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+# create venv
+python -m venv src/venv
+
+# update pip and install deps
+source src/venv/bin/activate
+pip install youtube_dl pysimplegui pyperclip
+
+# deactivate venv
+deactivate
