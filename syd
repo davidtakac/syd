@@ -1,45 +1,25 @@
 #!/usr/bin/env python
 import PySimpleGUI as sg
 import youtube_dl
-import os
 import threading
-import subprocess
 import pyperclip
+import utils
 
 class Syd:
-    APP_NAME = 'syd-music'
-    #manual events
-    ON_BEGIN = 'event-begin'
-    ON_PROGRESS = 'event-dl-progress'
-    ON_CONVERT_BEGIN = 'event-convert-begin'
-    ON_CONVERT_END = 'event-convert-end'
-    ON_ERROR = 'event-error'
-    BTN_DL_ENABLED = 'event-dl-enabled'
-    #menu strings and also event keys
-    PASTE = 'Paste'
-    CLEAR = 'Clear'
-    #view keys
-    BTN_DL = 'event-download'
-    BTN_VIEW = 'event-view'
-    INPUT_URL = 'url'
-    LABEL_STATUS = 'status'
-    #other constants
-    TRUNC_SIZE = 24
-
     def start(self):
         while True: 
             event, values = self._window.read()
-            if event == self.BTN_DL:
-                self._download(values[self.INPUT_URL])
-            elif event == self.BTN_DL_ENABLED:
-                self._window[self.BTN_DL].update(disabled=not values[event])
-            elif event == self.LABEL_STATUS:
-                self._window[self.LABEL_STATUS].update(values[event])
-            elif event == self.BTN_VIEW:
-                self._open_file(self._dl_path)
-            elif event == self.PASTE:
+            if event == utils.BTN_DL:
+                self._download(values[utils.INPUT_URL])
+            elif event == utils.BTN_DL_ENABLED:
+                self._window[utils.BTN_DL].update(disabled=not values[event])
+            elif event == utils.LABEL_STATUS:
+                self._window[event].update(values[event])
+            elif event == utils.BTN_VIEW:
+                utils.open_file(utils.DL_PATH)
+            elif event == utils.PASTE:
                 self._paste()
-            elif event == self.CLEAR:
+            elif event == utils.CLEAR:
                 self._clear()
             elif event == sg.WINDOW_CLOSED:
                 break
@@ -55,21 +35,18 @@ class Syd:
     def _init_gui(self):
         sg.theme('LightGreen')
         menu = [
-            ['Edit', [self.PASTE, self.CLEAR]],
+            ['Edit', [utils.PASTE, utils.CLEAR]],
         ]
         layout = [ 
             [sg.Menu(menu)],
             [sg.Text('YouTube link')],
-            [sg.InputText(key=self.INPUT_URL)], 
-            [sg.Button('Download MP3', key=self.BTN_DL, bind_return_key=True), sg.Button('View downloaded songs', key=self.BTN_VIEW)], 
-            [sg.Text(key=self.LABEL_STATUS, size=(36,1))]
+            [sg.In(key=utils.INPUT_URL)], 
+            [sg.Button('Download MP3', key=utils.BTN_DL, bind_return_key=True), sg.Button('View downloaded songs', key=utils.BTN_VIEW)], 
+            [sg.Text(key=utils.LABEL_STATUS, size=(36,1))]
         ]
-        self._window = sg.Window(self.APP_NAME, layout)
+        self._window = sg.Window(utils.APP_NAME, layout)
 
     def _init_ytdl(self):
-        self._dl_path = '{}/Music/{}/'.format(os.environ['HOME'], self.APP_NAME)
-        self._outtmpl_singles = '{}%(title)s.%(ext)s'.format(self._dl_path)
-        self._outtmpl_playlist = '{}%(playlist)s/%(title)s.%(ext)s'.format(self._dl_path)
         params = {
             #outtmpl is dynamically set
             'format': 'bestaudio/best',
@@ -95,7 +72,7 @@ class Syd:
     
     def _update_outtmpl(self, isPlaylist):
         self._ytdl.params.update(
-            {'outtmpl': self._outtmpl_playlist if isPlaylist else self._outtmpl_singles}
+            {'outtmpl': utils.OUTTMPL_PLAYLIST if isPlaylist else utils.OUTTMPL_SINGLES}
         )
 
     def _dl_worker(self, url):
@@ -117,50 +94,35 @@ class Syd:
             self._on_progress_finished(prog)
 
     def _on_begin(self):
-        self._event(self.BTN_DL_ENABLED, False)
-        self._event(self.LABEL_STATUS, 'Extracting info…')
+        self._event(utils.BTN_DL_ENABLED, False)
+        self._event(utils.LABEL_STATUS, 'Extracting info…')
 
     def _on_progress_update(self, prog):
-        video_name = self._get_filename(prog['filename'])
-        video_name = self._trunc(video_name)
+        video_name = utils.base_filename(prog['filename'])
+        video_name = utils.trunc(video_name, utils.TRUNC_SIZE)
         status_str = '"{}" {}'.format(video_name, prog['_percent_str'])
-        self._event(self.LABEL_STATUS, status_str)
+        self._event(utils.LABEL_STATUS, status_str)
 
     def _on_progress_finished(self, prog):
-        video_name = self._get_filename(prog['filename'])
-        video_name = self._trunc(video_name)
+        video_name = utils.base_filename(prog['filename'])
+        video_name = utils.trunc(video_name, utils.TRUNC_SIZE)
         status_str = '"{}" to MP3…'.format(video_name)
-        self._event(self.LABEL_STATUS, status_str)
-
-    def _trunc(self, text):
-        if len(text) > self.TRUNC_SIZE: 
-            text = text[:self.TRUNC_SIZE] + '…'
-        return text
-    
-    def _get_filename(self, path):
-        #get filename without path
-        filename = os.path.basename(path)
-        #remove extension
-        filename = os.path.splitext(filename)[0]
-        return filename
+        self._event(utils.LABEL_STATUS, status_str)
 
     def _on_error(self):
-        self._event(self.LABEL_STATUS, 'Error, check your link.')
-        self._event(self.BTN_DL_ENABLED, True)
+        self._event(utils.LABEL_STATUS, 'Error, check your link.')
+        self._event(utils.BTN_DL_ENABLED, True)
 
     def _on_convert_end(self, title):
-        self._event(self.CLEAR)
-        self._event(self.LABEL_STATUS, '"{}" done!'.format(self._trunc(title)))
-        self._event(self.BTN_DL_ENABLED, True)
+        self._event(utils.CLEAR)
+        self._event(utils.LABEL_STATUS, '"{}" done!'.format(utils.trunc(title, utils.TRUNC_SIZE)))
+        self._event(utils.BTN_DL_ENABLED, True)
 
     def _paste(self):
-        self._window[self.INPUT_URL].update(pyperclip.paste())
+        self._window[utils.INPUT_URL].update(pyperclip.paste())
 
     def _clear(self):
-        self._window[self.INPUT_URL].update('')
-
-    def _open_file(self, file_path):
-        subprocess.Popen(['xdg-open', file_path])
+        self._window[utils.INPUT_URL].update('')
 
 if __name__ == '__main__':
     Syd().start()
