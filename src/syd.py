@@ -34,7 +34,7 @@ class Syd:
             [sg.Text('YouTube link')],
             [sg.In(key=utils.INPUT_URL)], 
             [sg.Button('Download MP3', key=utils.BTN_DL, bind_return_key=True), sg.Button('View downloaded songs', key=utils.BTN_VIEW)], 
-            [sg.Text('Use Ctrl+V to paste your link.', key=utils.LABEL_STATUS, size=(36,1))]
+            [sg.Text('Press Ctrl+V to paste your link.', key=utils.LABEL_STATUS, size=(36,1))]
         ]
         self._window = sg.Window(utils.APP_NAME, layout)
 

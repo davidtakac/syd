@@ -5,3 +5,8 @@ python -m venv src/venv
 source src/venv/bin/activate
 pip install youtube_dl pysimplegui
 deactivate
+
+# create a .desktop file
+launcher_path="$HOME/.local/share/applications/syd.desktop"
+launcher_content="[Desktop Entry]\nType=Application\nPath=$PWD\nExec=$PWD/syd\nName=syd-music\nIcon=youtube-dl\nDescription=Simple YouTube to MP3 downloader\nGenericName=YouTube to MP3"
+echo -e "$launcher_content" > "$launcher_path"
