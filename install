@@ -3,10 +3,13 @@
 # create venv and install dependencies
 python -m venv src/venv
 source src/venv/bin/activate
-pip install youtube_dl pysimplegui
+pip install tk youtube_dl pysimplegui
 deactivate
 
 # create a .desktop file
-launcher_path="$HOME/.local/share/applications/syd.desktop"
+launcher_path="$HOME/.local/share/applications"
 launcher_content="[Desktop Entry]\nType=Application\nPath=$PWD\nExec=$PWD/syd\nName=syd-music\nIcon=youtube-dl\nDescription=Simple YouTube to MP3 downloader\nGenericName=YouTube to MP3"
-echo -e "$launcher_content" > "$launcher_path"
+# create an applications dir and the .desktop file inside it
+[ -d $launcher_path ] || mkdir -p "$launcher_path" && touch "$launcher_path/syd.desktop"
+# fill the .desktop file
+echo -e "$launcher_content" > "$launcher_path/syd.desktop"
