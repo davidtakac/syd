@@ -3,9 +3,9 @@ A very simple YouTube to MP3 downloader.
 
 # Installation
 1. Clone or download the repository
-2. Navigate to repository root file
-3. Install with: `chmod +x install syd; ./install`
-4. Run the app with `./syd`
+2. Navigate to repository root directory
+3. Install app: `chmod +x install syd; ./install`
+4. Run: `./syd`
 
 # Instructions
 - Paste a YouTube link into the text box and click the button to download. 

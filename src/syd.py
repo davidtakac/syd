@@ -1,7 +1,6 @@
 import PySimpleGUI as sg
 import youtube_dl
 import threading
-import pyperclip
 import utils
 
 class Syd:
@@ -14,12 +13,10 @@ class Syd:
                 self._window[utils.BTN_DL].update(disabled=not values[event])
             elif event == utils.LABEL_STATUS:
                 self._window[event].update(values[event])
-            elif event == utils.BTN_VIEW:
-                utils.open_file(utils.DL_PATH)
-            elif event == utils.PASTE:
-                self._paste()
             elif event == utils.CLEAR:
                 self._clear()
+            elif event == utils.BTN_VIEW:
+                utils.open_file(utils.DL_PATH)
             elif event == sg.WINDOW_CLOSED:
                 break
             else: 
@@ -33,15 +30,11 @@ class Syd:
         
     def _init_gui(self):
         sg.theme('LightGreen')
-        menu = [
-            ['Edit', [utils.PASTE, utils.CLEAR]],
-        ]
-        layout = [ 
-            [sg.Menu(menu)],
+        layout = [
             [sg.Text('YouTube link')],
             [sg.In(key=utils.INPUT_URL)], 
             [sg.Button('Download MP3', key=utils.BTN_DL, bind_return_key=True), sg.Button('View downloaded songs', key=utils.BTN_VIEW)], 
-            [sg.Text(key=utils.LABEL_STATUS, size=(36,1))]
+            [sg.Text('Use Ctrl+V to paste your link.', key=utils.LABEL_STATUS, size=(36,1))]
         ]
         self._window = sg.Window(utils.APP_NAME, layout)
 
@@ -116,9 +109,6 @@ class Syd:
         self._event(utils.CLEAR)
         self._event(utils.LABEL_STATUS, '"{}" done!'.format(utils.trunc(title, utils.TRUNC_SIZE)))
         self._event(utils.BTN_DL_ENABLED, True)
-
-    def _paste(self):
-        self._window[utils.INPUT_URL].update(pyperclip.paste())
 
     def _clear(self):
         self._window[utils.INPUT_URL].update('')

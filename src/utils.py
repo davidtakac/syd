@@ -9,9 +9,7 @@ ON_CONVERT_BEGIN = 'event-convert-begin'
 ON_CONVERT_END = 'event-convert-end'
 ON_ERROR = 'event-error'
 BTN_DL_ENABLED = 'event-dl-enabled'
-#menu strings and also event keys
-PASTE = 'Paste'
-CLEAR = 'Clear'
+CLEAR = 'event-clear'
 #view keys
 BTN_DL = 'event-download'
 BTN_VIEW = 'event-view'
