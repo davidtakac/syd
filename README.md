@@ -3,9 +3,13 @@ A very simple YouTube to MP3 downloader.
 
 # Installation
 1. Clone or download the repository
-2. Navigate to repository root directory
-3. Install: `chmod +x install syd; ./install`
-4. Run: 
+2. Install `tkinter`:
+    - Fedora: `sudo dnf install python3-tkinter`
+    - Arch/Manjaro: `sudo pacman -S tk`
+    - Ubuntu/Debian: `sudo apt-get install python3-tk`
+3. Navigate to repository root directory
+4. Install: `chmod +x install syd; ./install`
+5. Run: 
     - from terminal `./syd`
     - with Application launcher (.desktop file gets generated with install)
 

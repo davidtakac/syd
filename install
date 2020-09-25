@@ -3,7 +3,7 @@
 # create venv and install dependencies
 python -m venv src/venv
 source src/venv/bin/activate
-pip install tk youtube_dl pysimplegui
+pip install youtube_dl pysimplegui
 deactivate
 
 # create the directory for downloads
