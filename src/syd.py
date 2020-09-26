@@ -32,13 +32,13 @@ class Syd:
         sg.theme('LightGreen')
         layout = [
             [sg.Text('YouTube link')],
-            [sg.In(key=utils.INPUT_URL, tooltip='Ctrl+V to paste', size=(40,1))], 
+            [sg.In(key=utils.INPUT_URL, tooltip='Ctrl+V to paste')], 
             [
                 sg.Button('Download MP3', key=utils.BTN_DL, bind_return_key=True), 
                 sg.Button('Clear', key=utils.CLEAR), 
                 sg.Button('Downloads', key=utils.BTN_VIEW)
             ], 
-            [sg.Text('Press Ctrl+V to paste your link.', key=utils.LABEL_STATUS, size=(40,1))]
+            [sg.Text('Press Ctrl+V to paste your link.', key=utils.LABEL_STATUS)]
         ]
         self._window = sg.Window(utils.APP_NAME, layout)
 
