@@ -1,5 +1,6 @@
 import os
 import subprocess
+import platform
 
 APP_NAME = 'syd-music'
 #manual events
@@ -19,7 +20,7 @@ LABEL_STATUS = 'status'
 TRUNC_SIZE = 24
 
 #paths
-DL_PATH = '{}/Music/{}/'.format(os.environ['HOME'], APP_NAME)
+DL_PATH = '{}/Music/{}/'.format(os.path.expanduser('~'), APP_NAME)
 OUTTMPL_SINGLES = '{}%(title)s.%(ext)s'.format(DL_PATH)
 OUTTMPL_PLAYLIST = '{}%(playlist)s/%(title)s.%(ext)s'.format(DL_PATH)
 
@@ -36,4 +37,12 @@ def trunc(text, trunc_size):
     return text
 
 def open_file(path):
-    subprocess.Popen(['xdg-open', path])
+    sys = platform.system
+    if sys == 'Linux':
+        subprocess.Popen(['xdg-open', path])
+    elif sys == 'Windows':
+        os.startfile(path)
+    elif sys == 'Darwin':
+        subprocess.Popen(['open', path])
+    else:
+        print('Can\'t open file for this system.')
