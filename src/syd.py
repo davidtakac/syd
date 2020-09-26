@@ -38,7 +38,7 @@ class Syd:
                 sg.Button('Clear', key=utils.CLEAR), 
                 sg.Button('Downloads', key=utils.BTN_VIEW)
             ], 
-            [sg.Text('Press Ctrl+V to paste your link.', key=utils.LABEL_STATUS)]
+            [sg.Text('Press Ctrl+V to paste your link.', key=utils.LABEL_STATUS, size=(36,1))]
         ]
         self._window = sg.Window(utils.APP_NAME, layout)
 
