@@ -1,5 +1,5 @@
 # syd
-![syd-1](https://user-images.githubusercontent.com/35954251/94338969-ba3fc300-fff6-11ea-9f1c-1b90b509c9f9.png)  
+![screenshot](https://user-images.githubusercontent.com/35954251/94339029-228ea480-fff7-11ea-81c8-3d232e0a9958.png)  
 A very simple YouTube to MP3 downloader.
 
 # Installation
