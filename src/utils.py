@@ -37,7 +37,7 @@ def trunc(text, trunc_size):
     return text
 
 def open_file(path):
-    sys = platform.system
+    sys = platform.system()
     if sys == 'Linux':
         subprocess.Popen(['xdg-open', path])
     elif sys == 'Windows':
