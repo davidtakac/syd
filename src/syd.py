@@ -16,7 +16,7 @@ class Syd:
             elif event == utils.CLEAR:
                 self._clear()
             elif event == utils.BTN_VIEW:
-                utils.open_file(utils.DL_PATH)
+                self._on_view_click()
             elif event == sg.WINDOW_CLOSED:
                 break
             else: 
@@ -115,6 +115,12 @@ class Syd:
 
     def _clear(self):
         self._window[utils.INPUT_URL].update('')
+
+    def _on_view_click(self):
+        if not utils.dir_exists(utils.DL_PATH):
+            self._event(utils.LABEL_STATUS, 'You haven\'t downloaded anything yet.')
+        else:
+            utils.open_file(utils.DL_PATH)
 
 if __name__ == '__main__':
     Syd().start()

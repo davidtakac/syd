@@ -44,3 +44,6 @@ def open_file(path):
         os.startfile(DL_PATH)
     else: 
         print('Can\'t open file')
+
+def dir_exists(path):
+    return os.path.isdir(path)
