@@ -32,9 +32,13 @@ class Syd:
         sg.theme('LightGreen')
         layout = [
             [sg.Text('YouTube link')],
-            [sg.In(key=utils.INPUT_URL)], 
-            [sg.Button('Download MP3', key=utils.BTN_DL, bind_return_key=True), sg.Button('View downloaded songs', key=utils.BTN_VIEW)], 
-            [sg.Text('Press Ctrl+V to paste your link.', key=utils.LABEL_STATUS, size=(36,1))]
+            [sg.In(key=utils.INPUT_URL, tooltip='Ctrl+V to paste', size=(40,1))], 
+            [
+                sg.Button('Download MP3', key=utils.BTN_DL, bind_return_key=True), 
+                sg.Button('Clear', key=utils.CLEAR), 
+                sg.Button('Downloads', key=utils.BTN_VIEW)
+            ], 
+            [sg.Text('Press Ctrl+V to paste your link.', key=utils.LABEL_STATUS, size=(40,1))]
         ]
         self._window = sg.Window(utils.APP_NAME, layout)
 
@@ -106,7 +110,6 @@ class Syd:
         self._event(utils.BTN_DL_ENABLED, True)
 
     def _on_convert_end(self, title):
-        self._event(utils.CLEAR)
         self._event(utils.LABEL_STATUS, '"{}" done!'.format(utils.trunc(title, utils.TRUNC_SIZE)))
         self._event(utils.BTN_DL_ENABLED, True)
 
